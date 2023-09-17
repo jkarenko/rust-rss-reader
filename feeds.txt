@@ -1,0 +1,3 @@
+https://www.iltalehti.fi/rss/uutiset.xml
+https://www.hs.fi/rss/tuoreimmat.xml
+https://feeds.yle.fi/uutiset/v1/majorHeadlines/YLE_UUTISET.rss
