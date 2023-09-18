@@ -32,7 +32,7 @@ fn filter_items(items: Vec<rss::Item>, keywords: &Vec<String>) -> Vec<rss::Item>
         let title = item.title().unwrap_or_default();
         let description = item.description().unwrap_or_default();
         keywords.iter().any(|keyword| {
-            title.to_lowercase().contains(keyword) || description.to_lowercase().contains(keyword) || title.to_lowercase().contains(keyword)
+            title.to_lowercase().contains(keyword) || description.to_lowercase().contains(keyword)
         })
     }).collect();
     filtered_items
