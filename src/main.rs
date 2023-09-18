@@ -5,6 +5,7 @@ use std::error::Error;
 use serde::Serialize;
 use warp::Filter;
 use serde_json::json;
+use futures::stream::{FuturesUnordered, StreamExt};
 
 #[derive(Serialize)]
 struct SerializableItem {
@@ -31,11 +32,22 @@ async fn rss_reader() -> Result<impl warp::Reply, warp::Rejection> {
     let keywords = read_file("keywords.txt").await.map_err(|_| warp::reject())?;
     let mut all_filtered_items = Vec::new();
 
+    let mut futures = FuturesUnordered::new();
+
     for feed in feeds_list.iter() {
-        println!("\nFeed: {}", feed);
-        let rss = get_rss(feed).await.map_err(|_| warp::reject())?;
-        let filtered_items = filter_items(rss.items().to_vec(), &keywords);
-        all_filtered_items.extend(filtered_items);
+        futures.push(get_rss(feed));
+    }
+
+    while let Some(result) = futures.next().await {
+        match result {
+            Ok(rss) => {
+                let filtered_items = filter_items(rss.items().to_vec(), &keywords);
+                all_filtered_items.extend(filtered_items);
+            }
+            Err(_) => {
+                println!("Error reading feed");
+            }
+        }
     }
     print_rss(&all_filtered_items);
 
