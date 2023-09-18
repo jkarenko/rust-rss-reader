@@ -14,12 +14,19 @@ struct SerializableItem {
     link: Option<String>,
     description: Option<String>,
     pub_date: Option<String>,
+    matched_keywords: Vec<String>,
 }
 
 #[tokio::main]
 async fn main() {
     env_logger::init();
     info!("Starting server");
+    info!("Reading feeds.txt");
+    let feeds_list = read_file("feeds.txt").await.unwrap();
+    info!("{:?}", feeds_list);
+    info!("Reading keywords.txt");
+    let keywords = read_file("keywords.txt").await.unwrap();
+    info!("{:?}", keywords);
     let rss_route = warp::path("rss")
         .and(warp::get())
         .and_then(rss_reader);
@@ -30,6 +37,7 @@ async fn main() {
         .run(([127, 0, 0, 1], 3030))
         .await;
 }
+
 async fn rss_reader() -> Result<impl warp::Reply, warp::Rejection> {
     let feeds_list = read_file("feeds.txt").await.map_err(|_| warp::reject())?;
     let keywords = read_file("keywords.txt").await.map_err(|_| warp::reject())?;
@@ -45,7 +53,10 @@ async fn rss_reader() -> Result<impl warp::Reply, warp::Rejection> {
         match result {
             Ok(rss) => {
                 let filtered_items = filter_items(rss.items().to_vec(), &keywords);
-                info!("Fetched RSS: {}: {} matches", rss.title(), filtered_items.len());
+                let matched_keywords: Vec<_> = filtered_items.iter()
+                    .flat_map(|(_, keywords)| keywords.clone())
+                    .collect();
+                info!("Fetched RSS: {}, matched: {:?}", rss.title(), matched_keywords);
                 all_filtered_items.extend(filtered_items);
             }
             Err(e) => {
@@ -53,15 +64,15 @@ async fn rss_reader() -> Result<impl warp::Reply, warp::Rejection> {
             }
         }
     }
-    // print_rss(&all_filtered_items);
 
     let serializable_items: Vec<SerializableItem> = all_filtered_items
         .into_iter()
-        .map(|item| SerializableItem {
+        .map(|(item, keywords)| SerializableItem {
             title: item.title().map(String::from),
             link: item.link().map(String::from),
             description: item.description().map(String::from),
             pub_date: item.pub_date().map(String::from),
+            matched_keywords: keywords,
         })
         .collect();
 
@@ -82,23 +93,22 @@ async fn read_file(filename: &str) -> Result<Vec<String>, Box<dyn Error>> {
     Ok(lines)
 }
 
-fn filter_items(items: Vec<rss::Item>, keywords: &Vec<String>) -> Vec<rss::Item> {
-    let filtered_items: Vec<_> = items.into_iter().filter(|item| {
+fn filter_items(items: Vec<rss::Item>, keywords: &Vec<String>) -> Vec<(rss::Item, Vec<String>)> {
+    let filtered_items: Vec<_> = items.into_iter().filter_map(|item| {
         let title = item.title().unwrap_or_default();
         let description = item.description().unwrap_or_default();
-        keywords.iter().any(|keyword| {
-            title.to_lowercase().contains(keyword) || description.to_lowercase().contains(keyword)
-        })
+        let mut matched_keywords = Vec::new();
+        for keyword in keywords {
+            if title.to_lowercase().contains(keyword) || description.to_lowercase().contains(keyword) {
+                matched_keywords.push(keyword.clone());
+            }
+        }
+        if !matched_keywords.is_empty() {
+            Some((item, matched_keywords))
+        } else {
+            None
+        }
     }).collect();
     filtered_items
 }
 
-fn print_rss(filtered_items: &Vec<rss::Item>) {
-    println!("Found {} items", filtered_items.len());
-    for item in filtered_items {
-        println!("  Date: {:?}", item.pub_date().unwrap_or(""));
-        println!("  Title: {:?}", item.title().unwrap_or(""));
-        println!("  Description: {:?}", item.description().unwrap_or(""));
-        println!("  Link: {:?}\n", item.link().unwrap_or(""));
-    }
-}
