@@ -9,7 +9,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     for feed in feeds_list.iter() {
         println!("\nFeed: {}", feed);
         let rss = get_rss(feed)?;
-        let filtered_items = filter_items(rss.items().to_vec(), keywords.clone());
+        let filtered_items = filter_items(rss.items().to_vec(), &keywords);
         print_rss(filtered_items.into_iter().collect());
     }
     Ok(())
@@ -27,7 +27,7 @@ fn read_file(filename: &str) -> Result<Vec<String>, Box<dyn Error>> {
     Ok(lines)
 }
 
-fn filter_items(items: Vec<rss::Item>, keywords: Vec<String>) -> Vec<rss::Item> {
+fn filter_items(items: Vec<rss::Item>, keywords: &Vec<String>) -> Vec<rss::Item> {
     let filtered_items: Vec<_> = items.into_iter().filter(|item| {
         let title = item.title().unwrap_or_default();
         let description = item.description().unwrap_or_default();
