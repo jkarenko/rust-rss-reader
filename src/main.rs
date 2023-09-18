@@ -3,7 +3,8 @@ extern crate rss;
 
 use std::error::Error;
 use serde::Serialize;
-use warp::Filter;
+use warp::{Filter};
+use log::{info, error};
 use serde_json::json;
 use futures::stream::{FuturesUnordered, StreamExt};
 
@@ -17,6 +18,8 @@ struct SerializableItem {
 
 #[tokio::main]
 async fn main() {
+    env_logger::init();
+    info!("Starting server");
     let rss_route = warp::path("rss")
         .and(warp::get())
         .and_then(rss_reader);
@@ -42,14 +45,15 @@ async fn rss_reader() -> Result<impl warp::Reply, warp::Rejection> {
         match result {
             Ok(rss) => {
                 let filtered_items = filter_items(rss.items().to_vec(), &keywords);
+                info!("Fetched RSS: {}: {} matches", rss.title(), filtered_items.len());
                 all_filtered_items.extend(filtered_items);
             }
-            Err(_) => {
-                println!("Error reading feed");
+            Err(e) => {
+                error!("Failed to fetch RSS: {}", e);
             }
         }
     }
-    print_rss(&all_filtered_items);
+    // print_rss(&all_filtered_items);
 
     let serializable_items: Vec<SerializableItem> = all_filtered_items
         .into_iter()
