@@ -24,6 +24,6 @@ jobs:
       uses: docker/build-push-action@v2
       with:
         context: .
-        file: ./src/Dockerfile
+        file: ./Dockerfile
         push: true
         tags: ${{ secrets.DOCKERHUB_USER }}/rss-reader:latest
