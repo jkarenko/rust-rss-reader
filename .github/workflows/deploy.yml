@@ -26,4 +26,4 @@ jobs:
         context: .
         file: ./src/Dockerfile
         push: true
-        tags: ${{ secrets.DOCKERHUB_USER }}/rust-rss-reader:${{ github.sha }}
+        tags: ${{ secrets.DOCKERHUB_USER }}/rss-reader:latest
