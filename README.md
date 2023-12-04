@@ -8,16 +8,28 @@ Reads a list of RSS feeds and keywords from `feeds.txt` and `keywords.txt` respe
 
 ## Usage
 
-### Run locally (requires Rust)
+### Run locally with Unix shell (requires Rust)
 
 ```bash
 # install rust
-curl https://sh.rustup.rs -sSf | sh
+curl https://sh.rustup.rs -sSf | sh 
 # build and run
 cargo build
 RUST_LOG=info cargo run
 open "http://localhost:3030"
 ```
+
+
+### Run locally with Powershell 
+```powershell 
+# install rust
+iwr -useb get.rustup.rs | iex
+# build and run
+cargo build
+$env:RUST_LOG="info"; cargo run
+open "http://localhost:3030"
+```
+
 
 ### Run inside a Docker container
 

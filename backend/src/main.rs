@@ -111,4 +111,3 @@ fn filter_items(items: Vec<rss::Item>, keywords: &Vec<String>) -> Vec<(rss::Item
     }).collect();
     filtered_items
 }
-
