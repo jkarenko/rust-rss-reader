@@ -31,7 +31,12 @@ async fn main() {
         .and(warp::get())
         .and_then(rss_reader);
 
-    let routes = rss_route;
+    let cors = warp::cors()
+        .allow_any_origin()
+        .allow_methods(vec!["GET", "POST", "DELETE"])
+        .allow_headers(vec!["Authorization", "Content-Type"]);
+
+    let routes = rss_route.with(cors);
 
     warp::serve(routes)
         .run(([0, 0, 0, 0], 3030))
